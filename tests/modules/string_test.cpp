@@ -59,6 +59,17 @@ TEST_F(StringTest, shouldGenerateUuid4)
     ASSERT_EQ(generatedUuid[23], '-');
 }
 
+TEST_F(StringTest, shouldGenerateUuid6)
+{
+    const auto generatedUuid = uuid(Uuid::V6);
+
+    ASSERT_EQ(generatedUuid[8], '-');
+    ASSERT_EQ(generatedUuid[13], '-');
+    ASSERT_EQ(generatedUuid[14], '6');
+    ASSERT_EQ(generatedUuid[18], '-');
+    ASSERT_EQ(generatedUuid[23], '-');
+}
+
 TEST_F(StringTest, shouldGenerateUuid4Default)
 {
     const auto generatedUuid = uuid();

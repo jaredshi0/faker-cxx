@@ -29,12 +29,7 @@ const std::map<StringCasing, std::string> stringCasingToAlphanumericCharactersMa
 };
 
 const std::map<StringCasing, std::set<char>> stringCasingToAlphaCharSetMapping{
-    {StringCasing::Lower, lowerCharSet},
-    {StringCasing::Upper, upperCharSet},
-    {StringCasing::Mixed, mixedAlphaCharSet},
-};
-
-std::string generateStringWithGuarantee(GuaranteeMap& guarantee, std::set<char>& targetCharacters, unsigned length)
+    {StringCasing::Lower,UUID_EPOCH_OFFSETWithGuarantee(GuaranteeMap& guarantee, std::set<char>& targetCharacters, unsigned length)
 {
     std::string output{};
     output += generateAtLeastString(guarantee);
@@ -491,6 +486,42 @@ std::string uuidV4()
     return result;
 }
 
+std::string uuidV6()
+{
+    RandomGenerator<std::mt19937> gen = RandomGenerator<std::mt19937>{};
+    const uint64_t UUID_EPOCH_OFFSET = 0x01B21DD213814000ULL;
+    auto now = std::chrono::system_clock::now();
+    auto since_epoch = now.time_since_epoch();
+
+    const auto timestamp =
+    UUID_EPOCH_OFFSET +
+    static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(since_epoch).count() * 10);
+    const auto time_low_and_version = static_cast<uint32_t>((timestamp) & 0x0FFFULL);
+    const auto time_mid = static_cast<uint16_t>((timestamp >> 12) & 0xFFFFULL);
+    const auto time_high = static_cast<uint16_t>((timestamp >> 28) & 0xFFFFFFFFFULL);
+    time_low_and_version |= (6 << 12);
+
+    std::uniform_int_distribution<uint16_t> clock_seq_dist(0, 0x3FFF);
+    const auto clock_seq = static_cast<uint16_t>(gen(clock_seq_dist));
+
+    std::uniform_int_distribution<uint64_t> node_dist(0, 0xFFFFFFFFFFFFULL);
+    uint64_t node = static_cast<unsigned long long int>(gen(node_dist)) & 0xFFFFFFFFFFFFULL;
+
+    uint8_t clock_seq_low = clock_seq & 0xFF;
+    uint8_t clock_seq_hi_and_reserved = ((clock_seq >> 8) & 0x3F) | 0x80;
+
+    std::ostringstream ss;
+    ss << std::hex << std::setfill('0');
+    ss << std::setw(8) << time_high << '-';
+    ss << std::setw(4) << time_mid << '-';
+    ss << std::setw(4) << time_low_and_version << '-';
+    ss << std::setw(2) << static_cast<int>(clock_seq_hi_and_reserved);
+    ss << std::setw(2) << static_cast<int>(clock_seq_low) << '-';
+    ss << std::setw(12) << std::setw(12) << node;
+
+    return ss.str();
+    
+}
 std::string uuid(Uuid uuid)
 {
     switch (uuid)
@@ -505,8 +536,7 @@ std::string uuid(Uuid uuid)
         // TODO: implement uuidV5
         return uuidV4();
     case Uuid::V6:
-        // TODO: implement uuidV6
-        return uuidV4();
+        return uuidv6();
     case Uuid::V7:
         // TODO: implement uuidV7
         return uuidV4();
